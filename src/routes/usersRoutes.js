@@ -1,5 +1,5 @@
-const express = require('express');
-const UsersController = require('../controllers/usersController');
+const express = require("express");
+const UsersController = require("../controllers/usersController");
 
 const router = express.Router();
 
@@ -22,7 +22,17 @@ const router = express.Router();
  *               - password
  *               - birthdate
  *               - interests
+ *               - email
+ *               - firstName
+ *               - lastName
+ *               - password
+ *               - birthdate
+ *               - interests
  *             properties:
+ *               email:
+ *                 type: string
+ *                 description: Unique email for the user
+ *               firstName:
  *               email:
  *                 type: string
  *                 description: Unique email for the user
@@ -30,13 +40,26 @@ const router = express.Router();
  *                 type: string
  *                 description: First name of the user
  *               lastName:
+ *                 description: First name of the user
+ *               lastName:
  *                 type: string
+ *                 description: Last name of the user
+ *               password:
  *                 description: Last name of the user
  *               password:
  *                 type: string
  *                 description: Password for the user
  *               birthdate:
+ *                 description: Password for the user
+ *               birthdate:
  *                 type: string
+ *                 description: Birthdate of the user in DD-MM-YYYY format
+ *                 example: "02-12-1998"
+ *               interests:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *                 description: List of user interests
  *                 description: Birthdate of the user in DD-MM-YYYY format
  *                 example: "02-12-1998"
  *               interests:
@@ -53,13 +76,22 @@ const router = express.Router();
  *               type: object
  *               properties:
  *                 email:
+ *                 email:
  *                   type: string
+ *                 firstName:
  *                 firstName:
  *                   type: string
  *                 lastName:
+ *                 lastName:
  *                   type: string
  *                 birthdate:
+ *                 birthdate:
  *                   type: string
+ *                   description: Birthdate in DD-MM-YYYY format
+ *                 interests:
+ *                   type: array
+ *                   items:
+ *                     type: string
  *                   description: Birthdate in DD-MM-YYYY format
  *                 interests:
  *                   type: array
@@ -70,28 +102,35 @@ const router = express.Router();
  *       500:
  *         description: Internal server error
  */
-router.post('/', UsersController.createUser);
+router.post("/", UsersController.createUser);
 /**
  * @swagger
  * /users/{email}:
+ * /users/{email}:
  *   get:
+ *     summary: Get user by email and password
  *     summary: Get user by email and password
  *     tags: [Users]
  *     parameters:
  *       - in: path
  *         name: email
+ *         name: email
  *         required: true
  *         schema:
  *           type: string
  *           description: Email of the user
+ *           description: Email of the user
  *       - in: query
+ *         name: password
  *         name: password
  *         required: true
  *         schema:
  *           type: string
  *           description: Password of the user
+ *           description: Password of the user
  *     responses:
  *       200:
+ *         description: User details retrieved successfully
  *         description: User details retrieved successfully
  *         content:
  *           application/json:
@@ -99,32 +138,41 @@ router.post('/', UsersController.createUser);
  *               type: object
  *               properties:
  *                 email:
+ *                 email:
  *                   type: string
+ *                 first_name:
  *                 first_name:
  *                   type: string
  *                 last_name:
+ *                 last_name:
  *                   type: string
+ *                 birthdate:
  *                 birthdate:
  *                   type: string
  *                 interests:
  *                   type: array
  *                   items:
  *                     type: string
+ *                 interests:
+ *                   type: array
+ *                   items:
+ *                     type: string
  *       400:
  *         description: Missing or invalid parameters
+ *         description: Missing or invalid parameters
  *       404:
+ *         description: User not found or invalid credentials
  *         description: User not found or invalid credentials
  *       500:
  *         description: Internal server error
  */
-router.get('/:email', UsersController.getUserByEmailAndPassword);
-
+router.get("/:email", UsersController.getUserByEmailAndPassword);
 
 /**
  * @swagger
  * /users:
  *   get:
- *     summary: Retrieve a paginated list of users
+ *     summary: Retrieve a paginated list of users or filter by criteria
  *     tags: [Users]
  *     parameters:
  *       - in: query
@@ -141,75 +189,22 @@ router.get('/:email', UsersController.getUserByEmailAndPassword);
  *           type: integer
  *           minimum: 1
  *         description: The number of users per page
- *     responses:
- *       200:
- *         description: A list of users
- *         content:
- *           application/json:
- *             schema:
- *               type: array
- *               items:
- *                 type: object
- *                 properties:
- *                   email:
- *                     type: string
- *                   first_name:
- *                     type: string
- *                   last_name:
- *                     type: string
- *                   birthdate:
- *                     type: string
- *                   interests:
- *                     type: array
- *                     items:
- *                       type: string
- *       400:
- *         description: Invalid pagination parameters
- *       500:
- *         description: Internal server error
- */
-router.get('/', UsersController.getPaginatedUsers);
-
-
-
-
-/**
- * @swagger
- * /users/filter:
- *   get:
- *     summary: Retrieve filtered users with pagination
- *     tags: [Users]
- *     parameters:
- *       - name: criteria
- *         in: query
- *         required: true
+ *       - in: query
+ *         name: criteria
+ *         required: false
  *         schema:
  *           type: string
  *           enum: [byEmailDomain, byLastname, byMinimumAge]
- *         description: The criteria for filtering users
- *       - name: value
- *         in: query
- *         required: true
+ *         description: The criteria for filtering users (optional)
+ *       - in: query
+ *         name: value
+ *         required: false
  *         schema:
  *           type: string
- *         description: The value for the specified criteria
- *       - name: page
- *         in: query
- *         required: true
- *         schema:
- *           type: integer
- *           minimum: 0
- *         description: The page index (starting from 0)
- *       - name: size
- *         in: query
- *         required: true
- *         schema:
- *           type: integer
- *           minimum: 1
- *         description: The number of users per page
+ *         description: The value corresponding to the criteria (required if criteria is provided)
  *     responses:
  *       200:
- *         description: A list of filtered users
+ *         description: A list of users or filtered users
  *         content:
  *           application/json:
  *             schema:
@@ -218,24 +213,20 @@ router.get('/', UsersController.getPaginatedUsers);
  *                 type: object
  *                 properties:
  *                   email:
+ *                   email:
  *                     type: string
- *                   description: The user's email
  *                   first_name:
  *                     type: string
- *                     description: The user's first name
  *                   last_name:
  *                     type: string
- *                     description: The user's last name
  *                   birthdate:
  *                     type: string
- *                     description: The user's birthdate in DD-MM-YYYY format
  *                   interests:
  *                     type: array
  *                     items:
  *                       type: string
- *                     description: The user's interests
  *       400:
- *         description: Invalid request parameters
+ *         description: Invalid pagination parameters or filtering criteria
  *         content:
  *           application/json:
  *             schema:
@@ -243,7 +234,7 @@ router.get('/', UsersController.getPaginatedUsers);
  *               properties:
  *                 error:
  *                   type: string
- *                   description: Error message explaining the issue
+ *                   description: Error message
  *       500:
  *         description: Internal server error
  *         content:
@@ -255,10 +246,8 @@ router.get('/', UsersController.getPaginatedUsers);
  *                   type: string
  *                   description: Error message for server issues
  */
-//router.get('/filter', UsersController.filterUsers);
-
-
-
+router.get("/", UsersController.getPaginatedUsers);
+// criteria = [byEmailDomain, byLastname, byMinimumAge]
 
 /**
  * @swagger
@@ -288,6 +277,6 @@ router.get('/', UsersController.getPaginatedUsers);
  *                   type: string
  *                   description: Error message
  */
-router.delete('/', UsersController.deleteAllUsers);
+router.delete("/", UsersController.deleteAllUsers);
 
 module.exports = router;

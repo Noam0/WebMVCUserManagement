@@ -1,16 +1,30 @@
-const UserModel = require('../models/users');
-const {formatUserBirthdate } = require('../utils/dateFormat');
+const UserModel = require("../models/users");
+const { formatUserBirthdate } = require("../utils/dateFormat");
 
 const UsersService = {
-  createUser: async ({ email, firstName, lastName, password, birthdate, interests }) => {
+  createUser: async ({
+    email,
+    firstName,
+    lastName,
+    password,
+    birthdate,
+    interests,
+  }) => {
     // Check if the email is already in use
     const existingUser = await UserModel.getUserByEmail(email);
     if (existingUser) {
-      throw new Error('A user with this email already exists');
+      throw new Error("A user with this email already exists");
     }
 
     // Create the user
-    const newUser = await UserModel.createUser({ email, firstName, lastName, password, birthdate, interests });
+    const newUser = await UserModel.createUser({
+      email,
+      firstName,
+      lastName,
+      password,
+      birthdate,
+      interests,
+    });
     return formatUserBirthdate(newUser);
   },
   getUserByEmailAndPassword: async (email, password) => {
@@ -39,27 +53,50 @@ const UsersService = {
     });
   },
 
-  getUsersByEmailDomain: async (domain, pageIndex, pageSize) => {
+  getUsersByLastname: async (lastname, pageIndex, pageSize) => {
     const offset = pageIndex * pageSize;
-    return await UserModel.getUsersByEmailDomain(domain, pageSize, offset);
+    const users = await UserModel.getUsersByLastname(
+      lastname,
+      pageSize,
+      offset
+    );
+    return users.map((user) => {
+      const { password, ...userWithoutPassword } = user;
+      return formatUserBirthdate(userWithoutPassword);
+    });
   },
 
-  filterUsers: async (criteria, value, page, size) => {
-    switch (criteria) {
-      case 'byEmailDomain':
-        return await UserModel.getUsersFilterByEmailDomain(value, page, size);
-      case 'byLastname':
-        return await UserModel.getUsersByLastname(value, page, size);
-      case 'byMinimumAge':
-        return await UserModel.getUsersByMinimumAge(value, page, size);
-      default:
-        throw new Error('Invalid filter criteria');
-    }
+  getUsersByMinimumAge: async (minimumAge, pageIndex, pageSize) => {
+    const offset = pageIndex * pageSize;
+    const users = await UserModel.getUsersByMinimumAge(
+      minimumAge,
+      pageSize,
+      offset
+    );
+    return users.map((user) => {
+      const { password, ...userWithoutPassword } = user;
+      return formatUserBirthdate(userWithoutPassword);
+    });
   },
+
+  getUsersByEmailDomain: async (domain, pageIndex, pageSize) => {
+    const offset = pageIndex * pageSize;
+    const users = await UserModel.getUsersByEmailDomain(
+      domain,
+      pageSize,
+      offset
+    );
+
+    // Exclude passwords and format birthdates
+    return users.map((user) => {
+      const { password, ...userWithoutPassword } = user;
+      return formatUserBirthdate(userWithoutPassword);
+    });
+  },
+
   deleteAllUsers: async () => {
     await UserModel.deleteAll();
   },
-  
 };
 
 module.exports = UsersService;
