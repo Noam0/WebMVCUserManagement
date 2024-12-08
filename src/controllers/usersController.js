@@ -1,91 +1,157 @@
 const UsersService = require('../services/usersService');
+const { isValidEmail , isValidPassword , isValidBirthdate} = require('../utils/validators');
 
 const UsersController = {
-    createUser: async (req, res) => {
-        try {
-            const { userId, appId, firstSeen, lastSeen } = req.body;
+  createUser: async (req, res) => {
+    try {
+      const { email, firstName, lastName, password, birthdate, interests } = req.body;
 
-            if (!userId || !appId) {
-                return res.status(400).json({ error: 'Missing required fields: userId or appId' });
-            }
+      // Validate required fields
+      if (!email || !firstName || !lastName || !password || !birthdate || !Array.isArray(interests)) {
+        return res.status(400).json({ error: 'Missing or invalid fields' });
+      }
 
-            const user = await UsersService.createUser({ userId, appId, firstSeen, lastSeen });
-            res.status(201).json(user);
-        } catch (error) {
-            console.error(error.message);
-            if (error.message.includes('already exists')) {
-                return res.status(409).json({ error: error.message });
-            }
-            res.status(500).json({ error: error.message || 'Internal Server Error' });
-        }
-    },
+      if(!isValidEmail(email)){
+        return res.status(400).json({ error: 'Invalid mail format'})
+      }
 
-    getUser: async (req, res) => {
-        try {
-            const { userId } = req.params;
-            const { appId } = req.query;
+      if(!isValidPassword(password)){
+        return res.status(400).json({ error: 'Password must be at least 5 characters long and contain at least one digit' });
+      }
 
-            if (!userId || !appId) {
-                return res.status(400).json({ error: 'Missing required fields: userId or appId' });
-            }
+      if(!isValidBirthdate(birthdate)){
+        return res.status(400).json({ error: 'Invalid date' });
+      }
 
-            const user = await UsersService.getUserDetails(userId, appId);
-            res.status(200).json(user);
-        } catch (error) {
-            console.error(error.message);
-            res.status(404).json({ error: error.message });
-        }
-    },
+      // Create the user
+      const user = await UsersService.createUser({ email, firstName, lastName, password, birthdate, interests });
+      const { password: _, ...userWithoutPassword } = user;
 
-    updateUser: async (req, res) => {
-        try {
-            const { userId } = req.params;
-            const { appId, lastSeen } = req.body;
+      res.status(201).json(userWithoutPassword);
+    } catch (error) {
+        console.error(error.message);
+  
+        // Return a generic error for any issues
+        res.status(500).json({ error: 'Internal Server Error' });
+      }
 
-            if (!userId || !appId) {
-                return res.status(400).json({ error: 'Missing required fields: userId or appId' });
-            }
+  },
 
-            const updatedUser = await UsersService.updateUser(userId, appId, { lastSeen });
-            res.status(200).json(updatedUser);
-        } catch (error) {
-            console.error(error.message);
-            res.status(404).json({ error: error.message });
-        }
-    },
 
-    deleteUser: async (req, res) => {
-        try {
-            const { userId } = req.params;
-            const { appId } = req.query;
+  getUserByEmailAndPassword: async (req, res) => {
+    try {
+      const { email } = req.params; // Extract email from path
+      const { password } = req.query; // Extract password from query parameter
+  
+      if (!email || !password) {
+        return res.status(400).json({ error: 'Missing email or password' });
+      }
+  
+      const user = await UsersService.getUserByEmailAndPassword(email, password);
+  
+      if (!user) {
+        return res.status(404).json({ error: 'No user found with the provided credentials' });
+      }
+  
+      const { password: _, ...userWithoutPassword } = user; // Exclude password
+      res.status(200).json(userWithoutPassword);
 
-            if (!userId || !appId) {
-                return res.status(400).json({ error: 'Missing required fields: userId or appId' });
-            }
+    } catch (error) {
+      console.error(error.message);
+      res.status(500).json({ error: 'Internal server error' });
+    }
+  },
 
-            const deletedUser = await UsersService.deleteUser(userId, appId);
-            res.status(200).json({ message: 'User deleted successfully', user: deletedUser });
-        } catch (error) {
-            console.error(error.message);
-            res.status(404).json({ error: error.message });
-        }
-    },
+  getPaginatedUsers: async (req, res) => {
+    try {
+      const { page, size } = req.query;
 
-    getUsersByApplication: async (req, res) => {
-        try {
-            const { appId } = req.params;
+      // Validate pagination parameters
+      const pageIndex = parseInt(page, 10);
+      const pageSize = parseInt(size, 10);
 
-            if (!appId) {
-                return res.status(400).json({ error: 'Missing required field: appId' });
-            }
+      if (isNaN(pageIndex) || isNaN(pageSize) || pageIndex < 0 || pageSize < 1) {
+        return res.status(400).json({ error: 'Invalid pagination parameters' });
+      }
 
-            const users = await UsersService.getUsersByApplication(appId);
-            res.status(200).json(users);
-        } catch (error) {
-            console.error(error.message);
-            res.status(404).json({ error: error.message });
-        }
-    },
+      // Fetch users
+      const users = await UsersService.getPaginatedUsers(pageIndex, pageSize);
+      res.status(200).json(users);
+    } catch (error) {
+      console.error(error.message);
+      res.status(500).json({ error: 'Internal server error' });
+    }
+  },
+
+  getUsersByCriteria: async (req, res) => {
+    try {
+      const { criteria, value, page, size } = req.query;
+
+      
+      if (!criteria || !value) {
+        return res.status(400).json({ error: 'Missing criteria or value query parameters' });
+      }
+
+     
+      const pageIndex = parseInt(page, 10) || 0;
+      const pageSize = parseInt(size, 10) || 10;
+
+      if (pageIndex < 0 || pageSize < 1) {
+        return res.status(400).json({ error: 'Invalid pagination parameters' });
+      }
+
+      // ניתוח הקריטריון
+      if (criteria === 'byEmailDomain') {
+        const users = await UsersService.getUsersByEmailDomain(value, pageIndex, pageSize);
+        return res.status(200).json(users);
+      }
+
+      // אם הקריטריון לא מזוהה
+      return res.status(400).json({ error: 'Unsupported criteria' });
+    } catch (error) {
+      console.error(error.message);
+      res.status(500).json({ error: 'Internal server error' });
+    }
+  },
+  filterUsers: async (req, res) => {
+    try {
+      const { criteria, value, page, size } = req.query;
+
+      // Validate query parameters
+      if (!criteria || !value || page === undefined || size === undefined) {
+        return res.status(400).json({ error: 'Missing required query parameters' });
+      }
+
+      const pageIndex = parseInt(page, 10);
+      const pageSize = parseInt(size, 10);
+
+      if (isNaN(pageIndex) || isNaN(pageSize) || pageIndex < 0 || pageSize <= 0) {
+        return res.status(400).json({ error: 'Invalid pagination parameters' });
+      }
+
+      // Call the service to fetch filtered users
+      const users = await UsersService.filterUsers(criteria, value, pageIndex, pageSize);
+      res.status(200).json(users);
+    } catch (error) {
+      console.error(error.message);
+      res.status(500).json({ error: 'Internal Server Error' });
+    }
+  },
+
+
+
+  deleteAllUsers: async (req, res) => {
+    try {
+      await UsersService.deleteAllUsers();
+      res.status(200).json({ message: 'All data deleted successfully.' });
+    } catch (error) {
+      console.error('Error deleting all data:', error);
+      res.status(500).json({ error: 'Internal Server Error' });
+    }
+  },
+
+
+
 };
 
 module.exports = UsersController;

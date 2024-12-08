@@ -1,23 +1,25 @@
-const swaggerJsdoc = require('swagger-jsdoc');
+const swaggerJSDoc = require('swagger-jsdoc');
 
-const options = {
-    definition: {
-        openapi: '3.0.0',
-        info: {
-            title: 'Analytics SDK API',
-            version: '1.0.0',
-            description: 'API documentation for the Analytics SDK backend.',
-        },
-        servers: [
-            {
-                url: 'http://localhost:5000/api',
-                description: 'Development server',
-            },
-        ],
+const swaggerDefinition = {
+  openapi: '3.0.0',
+  info: {
+    title: 'User Management API',
+    version: '1.0.0',
+    description: 'API documentation for managing users',
+  },
+  servers: [
+    {
+      url: 'http://localhost:3000',
+      description: 'Local server',
     },
-    apis: ['./src/routes/*.js'], // Path to the API docs in your routes folder
+  ],
 };
 
-const swaggerSpec = swaggerJsdoc(options);
+const options = {
+  swaggerDefinition,
+  apis: ['./src/routes/*.js'], // Path to the route files for API documentation
+};
+
+const swaggerSpec = swaggerJSDoc(options);
 
 module.exports = swaggerSpec;

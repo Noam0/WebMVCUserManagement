@@ -16,24 +16,34 @@ const router = express.Router();
  *           schema:
  *             type: object
  *             required:
- *               - userId
- *               - appId
- *               - firstSeen
+ *               - email
+ *               - firstName
+ *               - lastName
+ *               - password
+ *               - birthdate
+ *               - interests
  *             properties:
- *               userId:
+ *               email:
  *                 type: string
- *                 description: Unique identifier for the user
- *               appId:
+ *                 description: Unique email for the user
+ *               firstName:
  *                 type: string
- *                 description: ID of the application the user belongs to
- *               firstSeen:
+ *                 description: First name of the user
+ *               lastName:
  *                 type: string
- *                 format: date-time
- *                 description: Timestamp when the user first interacted with the app
- *               lastSeen:
+ *                 description: Last name of the user
+ *               password:
  *                 type: string
- *                 format: date-time
- *                 description: Timestamp when the user last interacted with the app (optional)
+ *                 description: Password for the user
+ *               birthdate:
+ *                 type: string
+ *                 description: Birthdate of the user in DD-MM-YYYY format
+ *                 example: "02-12-1998"
+ *               interests:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *                 description: List of user interests
  *     responses:
  *       201:
  *         description: User registered successfully
@@ -42,167 +52,95 @@ const router = express.Router();
  *             schema:
  *               type: object
  *               properties:
- *                 userId:
+ *                 email:
  *                   type: string
- *                 appId:
+ *                 firstName:
  *                   type: string
- *                 firstSeen:
+ *                 lastName:
  *                   type: string
- *                   format: date-time
- *                 lastSeen:
+ *                 birthdate:
  *                   type: string
- *                   format: date-time
+ *                   description: Birthdate in DD-MM-YYYY format
+ *                 interests:
+ *                   type: array
+ *                   items:
+ *                     type: string
  *       400:
  *         description: Invalid input or missing required fields
  *       500:
  *         description: Internal server error
  */
 router.post('/', UsersController.createUser);
-
 /**
  * @swagger
- * /users/{userId}:
+ * /users/{email}:
  *   get:
- *     summary: Get user by userId and appId
+ *     summary: Get user by email and password
  *     tags: [Users]
  *     parameters:
  *       - in: path
- *         name: userId
+ *         name: email
  *         required: true
  *         schema:
  *           type: string
- *           description: The unique identifier of the user
+ *           description: Email of the user
  *       - in: query
- *         name: appId
+ *         name: password
  *         required: true
  *         schema:
  *           type: string
- *           description: The ID of the application the user belongs to
+ *           description: Password of the user
  *     responses:
  *       200:
- *         description: The user data
+ *         description: User details retrieved successfully
  *         content:
  *           application/json:
  *             schema:
  *               type: object
  *               properties:
- *                 userId:
+ *                 email:
  *                   type: string
- *                 appId:
+ *                 first_name:
  *                   type: string
- *                 firstSeen:
+ *                 last_name:
  *                   type: string
- *                   format: date-time
- *                 lastSeen:
+ *                 birthdate:
  *                   type: string
- *                   format: date-time
+ *                 interests:
+ *                   type: array
+ *                   items:
+ *                     type: string
  *       400:
- *         description: Missing required fields
+ *         description: Missing or invalid parameters
  *       404:
- *         description: User not found
+ *         description: User not found or invalid credentials
  *       500:
  *         description: Internal server error
  */
-router.get('/:userId', UsersController.getUser);
+router.get('/:email', UsersController.getUserByEmailAndPassword);
+
 
 /**
  * @swagger
- * /users/{userId}:
- *   put:
- *     summary: Update user details
- *     tags: [Users]
- *     parameters:
- *       - in: path
- *         name: userId
- *         required: true
- *         schema:
- *           type: string
- *           description: The unique identifier of the user
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             required:
- *               - appId
- *             properties:
- *               appId:
- *                 type: string
- *                 description: ID of the application the user belongs to
- *               lastSeen:
- *                 type: string
- *                 format: date-time
- *                 description: Timestamp when the user last interacted with the app
- *     responses:
- *       200:
- *         description: User updated successfully
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 userId:
- *                   type: string
- *                 appId:
- *                   type: string
- *                 firstSeen:
- *                   type: string
- *                   format: date-time
- *                 lastSeen:
- *                   type: string
- *                   format: date-time
- *       400:
- *         description: Missing required fields
- *       404:
- *         description: User not found
- *       500:
- *         description: Internal server error
- */
-router.put('/:userId', UsersController.updateUser);
-
-/**
- * @swagger
- * /users/{userId}:
- *   delete:
- *     summary: Delete a user
- *     tags: [Users]
- *     parameters:
- *       - in: path
- *         name: userId
- *         required: true
- *         schema:
- *           type: string
- *           description: The unique identifier of the user
- *       - in: query
- *         name: appId
- *         required: true
- *         schema:
- *           type: string
- *           description: The ID of the application the user belongs to
- *     responses:
- *       200:
- *         description: User deleted successfully
- *       404:
- *         description: User not found
- *       500:
- *         description: Internal server error
- */
-router.delete('/:userId', UsersController.deleteUser);
-
-/**
- * @swagger
- * /users/GetAllAppUsersByAppID/{appId}:
+ * /users:
  *   get:
- *     summary: Retrieve all users for a specific application
+ *     summary: Retrieve a paginated list of users
  *     tags: [Users]
  *     parameters:
- *       - in: path
- *         name: appId
+ *       - in: query
+ *         name: page
  *         required: true
  *         schema:
- *           type: string
- *           description: The ID of the application
+ *           type: integer
+ *           minimum: 0
+ *         description: The page index (starting from 0)
+ *       - in: query
+ *         name: size
+ *         required: true
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *         description: The number of users per page
  *     responses:
  *       200:
  *         description: A list of users
@@ -213,21 +151,143 @@ router.delete('/:userId', UsersController.deleteUser);
  *               items:
  *                 type: object
  *                 properties:
- *                   userId:
+ *                   email:
  *                     type: string
- *                   appId:
+ *                   first_name:
  *                     type: string
- *                   firstSeen:
+ *                   last_name:
  *                     type: string
- *                     format: date-time
- *                   lastSeen:
+ *                   birthdate:
  *                     type: string
- *                     format: date-time
- *       404:
- *         description: No users found for this application
+ *                   interests:
+ *                     type: array
+ *                     items:
+ *                       type: string
+ *       400:
+ *         description: Invalid pagination parameters
  *       500:
  *         description: Internal server error
  */
-router.get('/GetAllAppUsersByAppID/:appId', UsersController.getUsersByApplication);
+router.get('/', UsersController.getPaginatedUsers);
+
+
+
+
+/**
+ * @swagger
+ * /users/filter:
+ *   get:
+ *     summary: Retrieve filtered users with pagination
+ *     tags: [Users]
+ *     parameters:
+ *       - name: criteria
+ *         in: query
+ *         required: true
+ *         schema:
+ *           type: string
+ *           enum: [byEmailDomain, byLastname, byMinimumAge]
+ *         description: The criteria for filtering users
+ *       - name: value
+ *         in: query
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: The value for the specified criteria
+ *       - name: page
+ *         in: query
+ *         required: true
+ *         schema:
+ *           type: integer
+ *           minimum: 0
+ *         description: The page index (starting from 0)
+ *       - name: size
+ *         in: query
+ *         required: true
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *         description: The number of users per page
+ *     responses:
+ *       200:
+ *         description: A list of filtered users
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 type: object
+ *                 properties:
+ *                   email:
+ *                     type: string
+ *                   description: The user's email
+ *                   first_name:
+ *                     type: string
+ *                     description: The user's first name
+ *                   last_name:
+ *                     type: string
+ *                     description: The user's last name
+ *                   birthdate:
+ *                     type: string
+ *                     description: The user's birthdate in DD-MM-YYYY format
+ *                   interests:
+ *                     type: array
+ *                     items:
+ *                       type: string
+ *                     description: The user's interests
+ *       400:
+ *         description: Invalid request parameters
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *                   description: Error message explaining the issue
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *                   description: Error message for server issues
+ */
+//router.get('/filter', UsersController.filterUsers);
+
+
+
+
+/**
+ * @swagger
+ * /users:
+ *   delete:
+ *     summary: Delete all data from the service
+ *     tags: [Users]
+ *     responses:
+ *       200:
+ *         description: All data deleted successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   description: Confirmation message
+ *       500:
+ *         description: Internal Server Error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *                   description: Error message
+ */
+router.delete('/', UsersController.deleteAllUsers);
 
 module.exports = router;

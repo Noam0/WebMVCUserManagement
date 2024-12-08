@@ -1,52 +1,65 @@
 const UserModel = require('../models/users');
+const {formatUserBirthdate } = require('../utils/dateFormat');
 
 const UsersService = {
-    createUser: async ({ userId, appId, firstSeen, lastSeen }) => {
-        // Validate that the appId exists
-        const applicationExists = await UserModel.doesApplicationExist(appId);
-        if (!applicationExists) {
-            throw new Error(`Application with appId ${appId} does not exist`);
-        }
+  createUser: async ({ email, firstName, lastName, password, birthdate, interests }) => {
+    // Check if the email is already in use
+    const existingUser = await UserModel.getUserByEmail(email);
+    if (existingUser) {
+      throw new Error('A user with this email already exists');
+    }
 
-        // Validate that the userId is unique for the application
-        const existingUser = await UserModel.getUserByIdAndAppId(userId, appId);
-        if (existingUser) {
-            throw new Error(`User with ID ${userId} already exists for appId ${appId}`);
-        }
+    // Create the user
+    const newUser = await UserModel.createUser({ email, firstName, lastName, password, birthdate, interests });
+    return formatUserBirthdate(newUser);
+  },
+  getUserByEmailAndPassword: async (email, password) => {
+    // Fetch the user by email and password
+    const user = await UserModel.getUserByEmailAndPassword(email, password);
 
-        return await UserModel.createUser({ userId, appId, firstSeen, lastSeen });
-    },
+    if (!user) {
+      return null; // Return null if the user doesn't exist or credentials are incorrect
+    }
 
-    getUserDetails: async (userId, appId) => {
-        const user = await UserModel.getUserByIdAndAppId(userId, appId);
-        if (!user) {
-            throw new Error(`User with ID ${userId} not found for appId ${appId}`);
-        }
-        return user;
-    },
+    // Exclude the password from the response
+    const { password: _, ...userWithoutPassword } = user;
 
-    updateUser: async (userId, appId, updates) => {
-        const user = await UserModel.getUserByIdAndAppId(userId, appId);
-        if (!user) {
-            throw new Error(`User with ID ${userId} not found for appId ${appId}`);
-        }
+    // Format the birthdate before returning the user
+    return formatUserBirthdate(userWithoutPassword);
+  },
 
-        return await UserModel.updateUser(userId, appId, updates);
-    },
+  getPaginatedUsers: async (page, size) => {
+    const offset = page * size; // Zero-based page index
+    const users = await UserModel.getPaginatedUsers(offset, size);
 
-    deleteUser: async (userId, appId) => {
-        const user = await UserModel.getUserByIdAndAppId(userId, appId);
-        if (!user) {
-            throw new Error(`User with ID ${userId} not found for appId ${appId}`);
-        }
+    // Exclude passwords and format birthdates
+    return users.map((user) => {
+      const { password, ...userWithoutPassword } = user;
+      return formatUserBirthdate(userWithoutPassword);
+    });
+  },
 
-        return await UserModel.deleteUser(userId, appId);
-    },
+  getUsersByEmailDomain: async (domain, pageIndex, pageSize) => {
+    const offset = pageIndex * pageSize;
+    return await UserModel.getUsersByEmailDomain(domain, pageSize, offset);
+  },
 
-    getUsersByApplication: async (appId) => {
-        const users = await UserModel.getUsersByAppId(appId);
-        return users;
-    },
+  filterUsers: async (criteria, value, page, size) => {
+    switch (criteria) {
+      case 'byEmailDomain':
+        return await UserModel.getUsersFilterByEmailDomain(value, page, size);
+      case 'byLastname':
+        return await UserModel.getUsersByLastname(value, page, size);
+      case 'byMinimumAge':
+        return await UserModel.getUsersByMinimumAge(value, page, size);
+      default:
+        throw new Error('Invalid filter criteria');
+    }
+  },
+  deleteAllUsers: async () => {
+    await UserModel.deleteAll();
+  },
+  
 };
 
 module.exports = UsersService;
