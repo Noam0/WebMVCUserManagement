@@ -5,17 +5,29 @@ const {
   isValidBirthdate,
 } = require("../utils/validators");
 
+
+const formatUserResponse = (user) => ({
+  email: user.email,
+  name: {
+    first: user.first_name,
+    last: user.last_name,
+  },
+  birthdate: user.birthdate,
+  interests: user.interests,
+});
+
+
+
 const UsersController = {
   createUser: async (req, res) => {
     try {
-      const { email, firstName, lastName, password, birthdate, interests } =
-        req.body;
+      const { email, name, password, birthdate, interests } = req.body;
 
-      // Validate required fields
       if (
         !email ||
-        !firstName ||
-        !lastName ||
+        !name ||
+        !name.first ||
+        !name.last ||
         !password ||
         !birthdate ||
         !Array.isArray(interests)
@@ -24,99 +36,67 @@ const UsersController = {
       }
 
       if (!isValidEmail(email)) {
-        return res.status(400).json({ error: "Invalid mail format" });
+        return res.status(400).json({ error: "Invalid email format" });
       }
 
       if (!isValidPassword(password)) {
-        return res.status(400).json({
-          error:
-            "Password must be at least 5 characters long and contain at least one digit",
-        });
+        return res
+          .status(400)
+          .json({
+            error:
+              "Password must be at least 5 characters long and contain at least one digit",
+          });
       }
 
       if (!isValidBirthdate(birthdate)) {
-        return res.status(400).json({ error: "Invalid date" });
+        return res.status(400).json({ error: "Invalid birthdate format" });
       }
 
-      // Create the user
       const user = await UsersService.createUser({
         email,
-        firstName,
-        lastName,
+        firstName: name.first,
+        lastName: name.last,
         password,
         birthdate,
         interests,
       });
-      const { password: _, ...userWithoutPassword } = user;
-
-      res.status(201).json(userWithoutPassword);
+      
+      res.status(201).json(formatUserResponse(user));
     } catch (error) {
       console.error(error.message);
-
-      // Return a generic error for any issues
       res.status(500).json({ error: "Internal Server Error" });
     }
   },
 
   getUserByEmailAndPassword: async (req, res) => {
     try {
-      const { email } = req.params; // Extract email from path
-      const { password } = req.query; // Extract password from query parameter
-
+      const { email } = req.params;
+      const { password } = req.query;
+  
       if (!email || !password) {
         return res.status(400).json({ error: "Missing email or password" });
       }
-
-      const user = await UsersService.getUserByEmailAndPassword(
-        email,
-        password
-      );
-
+  
+      const user = await UsersService.getUserByEmailAndPassword(email, password);
+  
       if (!user) {
         return res
           .status(404)
           .json({ error: "No user found with the provided credentials" });
       }
-
-      const { password: _, ...userWithoutPassword } = user; // Exclude password
-      res.status(200).json(userWithoutPassword);
+  
+      // Ensure response is in the correct order
+      res.status(200).json(formatUserResponse(user));
     } catch (error) {
       console.error(error.message);
       res.status(500).json({ error: "Internal server error" });
     }
   },
 
-  // getPaginatedUsers: async (req, res) => {
-  //   try {
-  //     const { page, size } = req.query;
-
-  //     // Validate pagination parameters
-  //     const pageIndex = parseInt(page, 10);
-  //     const pageSize = parseInt(size, 10);
-
-  //     if (
-  //       isNaN(pageIndex) ||
-  //       isNaN(pageSize) ||
-  //       pageIndex < 0 ||
-  //       pageSize < 1
-  //     ) {
-  //       return res.status(400).json({ error: "Invalid pagination parameters" });
-  //     }
-
-  //     // Fetch users
-  //     const users = await UsersService.getPaginatedUsers(pageIndex, pageSize);
-  //     res.status(200).json(users);
-  //   } catch (error) {
-  //     console.error(error.message);
-  //     res.status(500).json({ error: "Internal server error" });
-  //   }
-  // },
-
   getPaginatedUsers: async (req, res) => {
     try {
       const { page, size, criteria, value } = req.query;
 
-      // Validate pagination parameters
       const pageIndex = parseInt(page, 10);
       const pageSize = parseInt(size, 10);
 
@@ -132,7 +112,6 @@ const UsersController = {
       let users;
 
       if (criteria) {
-        // Handle filtering by criteria
         switch (criteria) {
           case "byEmailDomain":
             if (!value) {
@@ -160,9 +139,11 @@ const UsersController = {
             break;
           case "byMinimumAge":
             if (!value || isNaN(parseInt(value, 10))) {
-              return res.status(400).json({
-                error: "Valid age value is required for byMinimumAge",
-              });
+              return res
+                .status(400)
+                .json({
+                  error: "Valid age value is required for byMinimumAge",
+                });
             }
             users = await UsersService.getUsersByMinimumAge(
               parseInt(value, 10),
@@ -174,12 +155,10 @@ const UsersController = {
             return res.status(400).json({ error: "Invalid criteria provided" });
         }
       } else {
-        // Default case: get paginated users
         users = await UsersService.getPaginatedUsers(pageIndex, pageSize);
       }
 
-      // Fetch users
-      res.status(200).json(users);
+    res.status(200).json(users.map(formatUserResponse));
     } catch (error) {
       console.error(error.message);
       res.status(500).json({ error: "Internal server error" });

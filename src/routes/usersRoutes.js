@@ -3,6 +3,7 @@ const UsersController = require("../controllers/usersController");
 
 const router = express.Router();
 
+
 /**
  * @swagger
  * /users:
@@ -17,14 +18,7 @@ const router = express.Router();
  *             type: object
  *             required:
  *               - email
- *               - firstName
- *               - lastName
- *               - password
- *               - birthdate
- *               - interests
- *               - email
- *               - firstName
- *               - lastName
+ *               - name
  *               - password
  *               - birthdate
  *               - interests
@@ -32,34 +26,23 @@ const router = express.Router();
  *               email:
  *                 type: string
  *                 description: Unique email for the user
- *               firstName:
- *               email:
- *                 type: string
- *                 description: Unique email for the user
- *               firstName:
- *                 type: string
- *                 description: First name of the user
- *               lastName:
- *                 description: First name of the user
- *               lastName:
- *                 type: string
- *                 description: Last name of the user
- *               password:
- *                 description: Last name of the user
+ *               name:
+ *                 type: object
+ *                 required:
+ *                   - first
+ *                   - last
+ *                 properties:
+ *                   first:
+ *                     type: string
+ *                     description: First name of the user
+ *                   last:
+ *                     type: string
+ *                     description: Last name of the user
  *               password:
  *                 type: string
  *                 description: Password for the user
  *               birthdate:
- *                 description: Password for the user
- *               birthdate:
  *                 type: string
- *                 description: Birthdate of the user in DD-MM-YYYY format
- *                 example: "02-12-1998"
- *               interests:
- *                 type: array
- *                 items:
- *                   type: string
- *                 description: List of user interests
  *                 description: Birthdate of the user in DD-MM-YYYY format
  *                 example: "02-12-1998"
  *               interests:
@@ -76,22 +59,18 @@ const router = express.Router();
  *               type: object
  *               properties:
  *                 email:
- *                 email:
  *                   type: string
- *                 firstName:
- *                 firstName:
- *                   type: string
- *                 lastName:
- *                 lastName:
- *                   type: string
+ *                 name:
+ *                   type: object
+ *                   properties:
+ *                     first:
+ *                       type: string
+ *                       description: First name of the user
+ *                     last:
+ *                       type: string
+ *                       description: Last name of the user
  *                 birthdate:
- *                 birthdate:
  *                   type: string
- *                   description: Birthdate in DD-MM-YYYY format
- *                 interests:
- *                   type: array
- *                   items:
- *                     type: string
  *                   description: Birthdate in DD-MM-YYYY format
  *                 interests:
  *                   type: array
@@ -99,38 +78,48 @@ const router = express.Router();
  *                     type: string
  *       400:
  *         description: Invalid input or missing required fields
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *                   description: Error message
  *       500:
  *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *                   description: Error message
  */
-router.post("/", UsersController.createUser);
+router.post('/', UsersController.createUser);
+
 /**
  * @swagger
  * /users/{email}:
- * /users/{email}:
  *   get:
- *     summary: Get user by email and password
  *     summary: Get user by email and password
  *     tags: [Users]
  *     parameters:
  *       - in: path
  *         name: email
- *         name: email
  *         required: true
  *         schema:
  *           type: string
- *           description: Email of the user
- *           description: Email of the user
+ *         description: Email of the user
  *       - in: query
  *         name: password
- *         name: password
  *         required: true
  *         schema:
  *           type: string
- *           description: Password of the user
- *           description: Password of the user
+ *         description: Password of the user
  *     responses:
  *       200:
- *         description: User details retrieved successfully
  *         description: User details retrieved successfully
  *         content:
  *           application/json:
@@ -138,36 +127,65 @@ router.post("/", UsersController.createUser);
  *               type: object
  *               properties:
  *                 email:
- *                 email:
  *                   type: string
- *                 first_name:
- *                 first_name:
- *                   type: string
- *                 last_name:
- *                 last_name:
- *                   type: string
+ *                   description: Unique email of the user
+ *                   example: "valid@email.address"
+ *                 name:
+ *                   type: object
+ *                   properties:
+ *                     first:
+ *                       type: string
+ *                       description: First name of the user
+ *                       example: "Jane"
+ *                     last:
+ *                       type: string
+ *                       description: Last name of the user
+ *                       example: "Smith"
  *                 birthdate:
- *                 birthdate:
  *                   type: string
+ *                   description: Birthdate of the user in DD-MM-YYYY format
+ *                   example: "02-12-1998"
  *                 interests:
  *                   type: array
  *                   items:
  *                     type: string
- *                 interests:
- *                   type: array
- *                   items:
- *                     type: string
+ *                   description: List of user interests
+ *                   example: ["Make Sure", "This Arrays", "Contains", "at least", "ONE STRING"]
  *       400:
  *         description: Missing or invalid parameters
- *         description: Missing or invalid parameters
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *                   description: Error message explaining the issue
+ *                   example: "Invalid email or password"
  *       404:
  *         description: User not found or invalid credentials
- *         description: User not found or invalid credentials
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *                   description: Error message explaining the issue
+ *                   example: "User not found"
  *       500:
  *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *                   description: Error message for server issues
+ *                   example: "Internal server error"
  */
-router.get("/:email", UsersController.getUserByEmailAndPassword);
-
+router.get('/:email', UsersController.getUserByEmailAndPassword);
 /**
  * @swagger
  * /users:
@@ -213,12 +231,14 @@ router.get("/:email", UsersController.getUserByEmailAndPassword);
  *                 type: object
  *                 properties:
  *                   email:
- *                   email:
  *                     type: string
- *                   first_name:
- *                     type: string
- *                   last_name:
- *                     type: string
+ *                   name:
+ *                     type: object
+ *                     properties:
+ *                       first:
+ *                         type: string
+ *                       last:
+ *                         type: string
  *                   birthdate:
  *                     type: string
  *                   interests:
@@ -246,8 +266,7 @@ router.get("/:email", UsersController.getUserByEmailAndPassword);
  *                   type: string
  *                   description: Error message for server issues
  */
-router.get("/", UsersController.getPaginatedUsers);
-// criteria = [byEmailDomain, byLastname, byMinimumAge]
+router.get('/', UsersController.getPaginatedUsers);
 
 /**
  * @swagger
@@ -277,6 +296,6 @@ router.get("/", UsersController.getPaginatedUsers);
  *                   type: string
  *                   description: Error message
  */
-router.delete("/", UsersController.deleteAllUsers);
+router.delete('/', UsersController.deleteAllUsers);
 
 module.exports = router;
